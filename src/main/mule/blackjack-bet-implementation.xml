@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:os="http://www.mulesoft.org/schema/mule/os"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="blackjack-bet-implementationFlow" doc:id="c4a1cc9f-a09f-4532-994a-2beb08317c58" >
+		<flow-ref doc:name="blackjack-set-card-values-list-variables" doc:id="be12d7e2-f048-4e83-b754-a1199d7950b7" name="blackjack-set-card-values-list-variables" />
+		<set-variable value="#[message.attributes.queryParams.uid]" doc:name="Set uid" doc:id="5af44922-045f-46ec-ba37-dd3e6940831f" variableName="uid"/>
+		<set-variable value="#[message.attributes.queryParams.betAmount]" doc:name="Set betAmount" doc:id="af107ac7-cf18-4109-993c-3963d741bb50" variableName="betAmount"/>
+		<os:retrieve doc:name="Retrieve from object Store" doc:id="ac9cee03-6edb-4c0c-b71c-f3821bbeab73" key="#[vars.uid]" objectStore="Object_store" target="myObjectStoreValue"/>
+		<flow-ref doc:name="blackjack-bet-implementation-generate-dealer-cards" doc:id="c8ecea75-426a-4d7d-a4ee-9676090e5ad8" name="blackjack-bet-implementation-generate-dealer-cards"/>
+		<flow-ref doc:name="blackjack-bet-implementation-generate-player-cards" doc:id="af7e5f08-3c12-4340-a1ab-03bc9208aaa7" name="blackjack-bet-implementation-generate-player-cards"/>
+		<flow-ref doc:name="blackjack-calculate-total-card-value-flow" doc:id="6953454a-9f90-4b4c-ae22-96e47233414e" name="blackjack-calculate-total-card-value-flow"/>
+		<flow-ref doc:name="blackjack-card-adjust-ace-implementationFlow" doc:id="4d7eb513-317d-4830-89f8-361172bd0e11" name="blackjack-card-adjust-ace-implementationFlow"/>
+		<choice doc:name="Choice" doc:id="408d33ca-59f4-4634-9851-4dfe84b3b4c8" >
+			<when expression="#[vars.playerValue == 21]">
+				<set-variable value='#["Win"]' doc:name="Set 'state' as Win" doc:id="26eaa424-8cca-4fcd-b476-f0158d6cb6f9" variableName="state"/>
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="Logger" doc:id="66910c27-295a-47b5-a28b-822b3e21d1b8" message="Not so lucky to get 21 in just 2 cards"/>
+			</otherwise>
+		</choice>
+		<ee:transform doc:name="Final Payload" doc:id="8ee6775b-c443-45c2-a890-873d912754c5">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"uid": vars.uid,
+	("balance": vars.myObjectStoreValue.balance! as Number + 2 * vars.betAmount! as Number) if(vars.state == "Win"),
+	("balance": vars.myObjectStoreValue.balance! as Number - vars.betAmount! as Number) if(vars.state != "Win"),
+	"state": vars.state,
+	"bet": vars.betAmount as Number,
+	"dealerHidden": vars.dealerHidden,
+	"dealerVisible": vars.dealerVisible,
+	"dealerValue":vars.dealerValue,
+	"playerHand":vars.playerHand,
+	"playerValue":vars.playerValue
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<os:store doc:name="Store" doc:id="5d69d2c4-6116-4a53-a496-1d94d68dd72f" key="#[vars.uid]" objectStore="Object_store"/>
+	</flow>
+	<flow name="blackjack-bet-implementation-generate-dealer-cards" doc:id="636a0153-b92e-4675-8e43-6b5bb259fde8" >
+		<flow-ref doc:name="blackjack-generate-card-implementationFlow" doc:id="11d8f979-eb98-4391-8d61-6be5229c0862" name="blackjack-generate-card-implementationFlow"/>
+		<set-variable value="#[%dw 2.0
+output application/json
+---
+payload]" doc:name="Set dealerHidden" doc:id="e49274e3-d9d7-413a-9d36-321282e6401f" variableName="dealerHidden"/>
+		<flow-ref doc:name="blackjack-generate-card-implementationFlow" doc:id="7402e7f8-14a0-4544-b94c-2222c79c0493" name="blackjack-generate-card-implementationFlow"/>
+		<set-variable value="#[%dw 2.0
+output application/json
+---
+[payload]]" doc:name="Set dealerVisible" doc:id="4e3f4c98-885c-41e8-98b8-ef26606f04b5" variableName="dealerVisible"/>
+	</flow>
+	<flow name="blackjack-bet-implementation-generate-player-cards" doc:id="dcafa60f-d3da-4e77-ac59-f76388529088" >
+		<set-variable value="#[[]]" doc:name="Set playerHand" doc:id="2a75a1ec-fa4a-4094-b70b-f69024a01420" variableName="playerHand"/>
+		<foreach doc:name="For Each" doc:id="3deac1fd-741a-43b1-b5a6-5d0163518836" collection="#[0 to 1]">
+			<flow-ref doc:name="blackjack-generate-card-implementationFlow" doc:id="96e211ca-c61a-4924-bafc-d6276fef01fd" name="blackjack-generate-card-implementationFlow" />
+			<set-variable value='#[%dw 2.0
+output application/java
+---
+vars.playerHand + payload]' doc:name="Set playerHand" doc:id="54ceef34-f7f3-4227-a8a4-150499a3d4a0" variableName="playerHand"/>
+		</foreach>
+	</flow>
+</mule>

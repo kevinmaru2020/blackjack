@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="blackjack-set-card-values-list-variables" doc:id="e924739c-a380-4e92-aea4-f54d7dc2354b" >
+		<set-variable value='#[["A","2","3","4","5","6","7","8","9","10","J","Q","K"]]' doc:name="Set cardList" doc:id="05f77bec-60ec-4de5-ae1d-439383fd6161" variableName="cardList" />
+		<set-variable value='#[["11","2","3","4","5","6","7","8","9","10","10","10","10"]]' doc:name="Set actualValues" doc:id="a2ac74be-9432-4978-bcef-5165fafd7ac1" variableName="actualValues" />
+	</flow>
+	<flow name="blackjack-generate-card-implementationFlow" doc:id="acf7908c-8918-4b39-a9c8-9f0918246e22" >
+		<ee:transform doc:name="newCard" doc:id="63132900-6467-4ed5-b73b-842e085de8dd" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[vars.cardList[randomInt(12)]]]></ee:set-payload>
+			</ee:message>
+			<ee:variables >
+			</ee:variables>
+		</ee:transform>
+	</flow>
+	<flow name="blackjack-calculate-total-card-value-flow" doc:id="e8c8cb00-8b88-4d04-82d0-c691e3d97ba3" >
+		<ee:transform doc:name="Calculate dealerValue" doc:id="ade52f46-21ca-4f50-b9fb-953bfb2e81fe" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="dealerValue" ><![CDATA[%dw 2.0
+import * from dw::core::Arrays
+output application/json
+---
+sum(vars.dealerVisible map(val,index) -> {	
+	x:vars.actualValues[indexOf(vars.cardList, val)] as Number default []
+}.x)]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<ee:transform doc:name="Calculate playerValue" doc:id="737ee0b3-f0ed-4bea-94bc-f016620fb633" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="playerValue" ><![CDATA[%dw 2.0
+import * from dw::core::Arrays
+output application/json 
+---
+sum(vars.playerHand map(val,index) -> {	
+	x:vars.actualValues[indexOf(vars.cardList, val)] as Number default []
+}.x)
+
+]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+	</flow>
+	<flow name="blackjack-card-adjust-ace-implementationFlow" doc:id="e42195d8-961b-4fcb-a5ef-cf938f057ada" >
+		<foreach doc:name="For Each" doc:id="4cb85056-6cee-4b45-8986-4f264dbb06ba" collection="#[vars.playerHand]">
+			<choice doc:name="Choice" doc:id="5b5f106c-a96e-4df7-9cf4-54943ace1790" >
+				<when expression='#[payload == "A" and vars.playerValue &gt; 21]'>
+					<set-variable value="#[vars.playerValue as Number - 10]" doc:name="Set Variable" doc:id="c1fe3bd5-2427-4d9c-be79-c4e9da634b9a" variableName="playerValue"/>
+				</when>
+				<otherwise >
+					<logger level="INFO" doc:name="Logger" doc:id="9c8d810d-7e05-4351-aa63-96d6aae45a18" />
+				</otherwise>
+			</choice>
+		</foreach>
+		<logger level="INFO" doc:name="Logger" doc:id="bdcf8599-1d97-4837-84f9-0243e2ef1a78" />
+	</flow>
+</mule>

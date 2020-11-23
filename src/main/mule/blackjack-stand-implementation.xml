@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:os="http://www.mulesoft.org/schema/mule/os"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="blackjack-stand-implementationFlow" doc:id="72b6e109-998d-4f4f-ad0b-765019a93b8e" >
+		<flow-ref doc:name="blackjack-set-card-values-list-variables" doc:id="52b265db-6a5c-4582-9d38-4993f097f818" name="blackjack-set-card-values-list-variables" />
+		<set-variable value="#[message.attributes.queryParams.uid]" doc:name="Set uid" doc:id="6c7e1483-0b2c-4e79-aa0c-c9b73f4598d3" variableName="uid" />
+		<os:retrieve doc:name="Retrieve from object Store" doc:id="79f9b932-1ff1-4f09-87f0-f8440a65d9ad" key="#[vars.uid]" objectStore="Object_store" target="myObjectStoreValue" />
+		<set-variable value="#[vars.myObjectStoreValue.dealerHidden! &gt;&gt; vars.myObjectStoreValue.dealerVisible]" doc:name="Show Hidden Dealer Card" doc:id="4248c089-823d-4f82-b62f-c043ac7a5072" variableName="dealerVisible"/>
+		<ee:transform doc:name="Calculate dealerValue" doc:id="e1698119-cb05-40a6-8d59-37e6b33617a1">
+			<ee:message />
+			<ee:variables>
+				<ee:set-variable variableName="dealerValue"><![CDATA[%dw 2.0
+import * from dw::core::Arrays
+output application/json
+---
+sum(vars.dealerVisible map(val,index) -> {	
+	x:vars.actualValues[indexOf(vars.cardList, val)] as Number default []
+}.x)]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<flow-ref doc:name="blackjack-stand-dealer-add-card-Flow" doc:id="d6178119-f12d-4023-b1d1-5b3032263e2b" name="blackjack-stand-dealer-add-card-Flow"/>
+		<choice doc:name="Choice" doc:id="06bc5e3c-3a20-4bb1-ba9a-d15f686b31e2" >
+			<when expression="#[vars.dealerValue &gt; 21 or vars.myObjectStoreValue.playerValue &gt; vars.dealerValue]">
+				<set-variable value='#["Win"]' doc:name="Set Variable" doc:id="7bf3fbb0-cc9e-4158-9acc-56c468f3e316" variableName="state"/>
+			</when>
+			<when expression="#[vars.myObjectStoreValue.playerValue == vars.dealerValue]">
+				<set-variable value='#["Tie"]' doc:name="Set Variable" doc:id="af239bcc-24b2-465e-ae14-cde12de533e9" variableName="state"/>
+			</when>
+			<otherwise >
+				<set-variable value='#["Lost"]' doc:name="Set Variable" doc:id="5924a532-ec13-4f88-a697-c3bd856582bd" variableName="state"/>
+			</otherwise>
+		</choice>
+		<ee:transform doc:name="Final Payload" doc:id="57100fa0-a365-4730-9a00-b06ec11be362">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"uid": vars.uid,
+	("balance":  vars.myObjectStoreValue.balance as Number + (2 * vars.myObjectStoreValue.bet as Number)) if(vars.state == "Win"),
+	("balance":  vars.myObjectStoreValue.balance as Number + (vars.myObjectStoreValue.bet as Number)) if(vars.state == "Tie"),
+	("balance":  vars.myObjectStoreValue.balance as Number) if(vars.state == "Lost"),
+	"state":vars.state,
+	"bet": vars.myObjectStoreValue.bet as Number,
+	"dealerVisible": vars.dealerVisible,
+	"dealerValue":vars.dealerValue,
+	"playerHand":vars.myObjectStoreValue.playerHand,
+	"playerValue":vars.myObjectStoreValue.playerValue
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<os:store doc:name="Store" doc:id="519625ca-60c9-421c-be6f-0c7225e0e42e" key="#[vars.uid]" objectStore="Object_store"/>
+		<logger level="INFO" doc:name="Logger" doc:id="c08655d4-2d4d-4199-adcf-56594a0f80c2" />
+	</flow>
+	<sub-flow name="blackjack-stand-dealer-add-card-Flow" doc:id="c2862c02-2dba-4d76-ad04-1e0b80104877" >
+		<choice doc:name="Choice" doc:id="35f79b88-61a5-4615-913d-be6f4778c355" >
+			<when expression="#[vars.dealerValue &lt;= 17]">
+				<flow-ref doc:name="blackjack-generate-card-implementationFlow" doc:id="d9d1335e-4d1e-4dcb-9b20-cd0fced63099" name="blackjack-generate-card-implementationFlow" />
+				<set-variable value="#[%dw 2.0
+output application/java
+---
+vars.dealerVisible! + payload]" doc:name="Add new card to dealer hand" doc:id="c214faf5-fc7b-4328-83c6-2e199b788e33" variableName="dealerVisible"/>
+				<ee:transform doc:name="Calculate dealerValue" doc:id="b5eb1727-e4f6-4903-b4c2-6422ec3984d4" >
+					<ee:message />
+					<ee:variables >
+						<ee:set-variable variableName="dealerValue" ><![CDATA[%dw 2.0
+import * from dw::core::Arrays
+output application/json
+---
+sum(vars.dealerVisible map(val,index) -> {	
+	x:vars.actualValues[indexOf(vars.cardList, val)] as Number default []
+}.x)]]></ee:set-variable>
+					</ee:variables>
+				</ee:transform>
+				<flow-ref doc:name="blackjack-stand-dealer-add-card-Flow" doc:id="963f5c3a-c51e-4471-aa72-cdef814fe37d" name="blackjack-stand-dealer-add-card-Flow"/>
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="Logger" doc:id="37c5dad8-aac4-492e-9255-d30fafd6c007" message="Dealer Value is greater than 21"/>
+			</otherwise>
+		</choice>
+	</sub-flow>
+</mule>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:os="http://www.mulesoft.org/schema/mule/os" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd">
+	<flow name="blackjack-initialize-implementation-flow" doc:id="7d485bea-69b7-4a4a-a4e5-9424a2860f39" >
+		<os:clear doc:name="Clear" doc:id="3a22c380-7f0d-48ca-91e4-54082c1bcc25" />
+		<set-variable value="#[message.attributes.queryParams.uid]" doc:name="Set uid" doc:id="aafc4aba-df47-4b09-a2ba-9ef06750bd34" variableName="uid"/>
+		<ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd" doc:name="Generate ObjectStore Json">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  uid: vars.uid,
+  balance: p('initialBalance') as Number
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+		<os:store doc:name="Store" doc:id="04769a71-4428-4649-a41e-edc91e5308b4" key="#[vars.uid]" objectStore="Object_store"/>
+	</flow>
+</mule>
