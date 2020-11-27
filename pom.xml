@@ -4,7 +4,7 @@
 
 	<groupId>6b9a33bd-c601-4698-ae87-2d5ce3d27c98</groupId>
 	<artifactId>blackjack</artifactId>
-    <version>1.0.7</version>
+    <version>1.0.11</version>
     <packaging>mule-application</packaging>
 
 	<name>BlackJack</name>

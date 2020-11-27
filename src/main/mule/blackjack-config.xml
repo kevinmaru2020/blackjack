@@ -11,8 +11,16 @@ http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/cu
 	
 	<http:listener-config name="blackjack-httpListenerConfig">
         <http:listener-connection host="0.0.0.0" port="8081" />
-    </http:listener-config>
-    <apikit:config name="blackjack-config" api="resource::a4d89ecd-7c0e-41c4-a18f-81139943429c:blackjack:1.0.2:raml:zip:blackjack.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+		<http:listener-interceptors >
+			<http:cors-interceptor >
+				<http:origins >
+					<http:public-resource />
+				</http:origins>
+			</http:cors-interceptor>
+		</http:listener-interceptors>
+    
+</http:listener-config>
+    <apikit:config name="blackjack-config" api="resource::a4d89ecd-7c0e-41c4-a18f-81139943429c:blackjack:1.0.3:raml:zip:blackjack.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
 	<configuration-properties doc:name="Configuration properties" doc:id="681cc52f-54e3-48d1-b668-197544b53f00" file="config.yaml" />
 	<os:object-store name="Object_store" doc:name="Object store" doc:id="9ef2efce-5022-4dd1-83df-09e67baa1742" maxEntries="500" entryTtl="120" entryTtlUnit="MINUTES" expirationInterval="120" />
     
