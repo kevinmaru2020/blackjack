@@ -4,7 +4,7 @@
 
 	<groupId>6b9a33bd-c601-4698-ae87-2d5ce3d27c98</groupId>
 	<artifactId>blackjack</artifactId>
-    <version>1.0.6</version>
+    <version>1.0.7</version>
     <packaging>mule-application</packaging>
 
 	<name>BlackJack</name>
@@ -47,13 +47,6 @@
             <version>1.1.6</version>
             <classifier>mule-plugin</classifier>
         </dependency>
-		<dependency>
-            <groupId>a4d89ecd-7c0e-41c4-a18f-81139943429c</groupId>
-            <artifactId>blackjack</artifactId>
-            <version>1.0.0</version>
-            <classifier>raml</classifier>
-            <type>zip</type>
-        </dependency>
     	<dependency>
             <groupId>org.mule.modules</groupId>
             <artifactId>mule-apikit-module</artifactId>
@@ -65,6 +58,13 @@
             <artifactId>mule-objectstore-connector</artifactId>
             <version>1.1.5</version>
             <classifier>mule-plugin</classifier>
+        </dependency>
+    	<dependency>
+            <groupId>a4d89ecd-7c0e-41c4-a18f-81139943429c</groupId>
+            <artifactId>blackjack</artifactId>
+            <version>1.0.3</version>
+            <classifier>raml</classifier>
+            <type>zip</type>
         </dependency>
     </dependencies>
 

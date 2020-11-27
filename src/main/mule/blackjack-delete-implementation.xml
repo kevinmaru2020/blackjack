@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:os="http://www.mulesoft.org/schema/mule/os"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="blackjack-delete-implementationFlow" doc:id="cecfafb7-1c1b-4e54-b9db-4d27158df3a9" >
+		<set-variable value="#[message.attributes.queryParams.uid]" doc:name="Set uid" doc:id="67a1c87a-24ed-40a8-8f95-e06add2eef61" variableName="uid"/>
+		<os:remove doc:name="Remove" doc:id="5b4e9719-c8f5-44a6-ab66-fe6ad2926a61" key="#[vars.uid]" objectStore="Object_store"/>
+		<ee:transform doc:name="Transform Message" doc:id="dc5dd73e-9b0e-4a40-9904-5ab33d07c2be" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+  "success": "User Deleted Successfully"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>

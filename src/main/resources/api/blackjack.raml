@@ -1,0 +1,68 @@
+#%RAML 1.0
+title: BlackJack
+version: v1
+
+/initialize:
+  get:
+    queryParameters:
+      uid:
+        required: true
+        description: Name of the Player
+    responses:
+      200:
+        body:
+          application/json:
+            example: !include exampleResponses/initialize.raml   
+            
+/bet:
+  get:
+    queryParameters:
+      uid:
+        required: true
+        description: Name of the Player
+      betAmount:
+        required: true
+        description: Amount taht the player wants to bet
+    responses:
+      200:
+        body:
+          application/json:
+            example: !include exampleResponses/bet.raml         
+            
+
+/hit:
+  get:
+    queryParameters:
+      uid:
+        required: true
+        description: Name of the Player
+    responses:
+      200:
+        body:
+          application/json:
+            example: !include exampleResponses/hit.raml  
+
+/stand:
+  get:
+    queryParameters:
+      uid:
+        required: true
+        description: Name of the Player
+    responses:
+      200:
+        body:
+          application/json:
+            example: !include exampleResponses/stand.raml       
+
+/delete:
+  get:
+    queryParameters:
+      uid:
+        description: 
+        required: true
+    responses:
+      200:
+        body:
+          application/json:
+            example: { "message": "Deleted this user" }
+                         
